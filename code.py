@@ -6,6 +6,8 @@ import audiopwmio
 import time
 import random
 
+deep_sleep_after_seconds = 60
+
 print('start!')
 
 mp3files = ['/sounds/' + f for f in os.listdir('/sounds/') if f.endswith('.mp3')]
@@ -21,9 +23,6 @@ def get_sound_to_play():
         return 0
     return random.randint(0, len(mp3files) - 1)
 
-# button is connected to pin GP18
-pin_alarm = alarm.pin.PinAlarm(pin=board.GP18, value=True, pull=True)
-
 def play():
     index = get_sound_to_play()
     file = mp3files[index]
@@ -32,20 +31,22 @@ def play():
     audio.play(decoder)
     print('playing', decoder.file)
     time.sleep(0.5)
-    # Wait for the audio to finish
+    # This allows you to do other things while the audio plays!
     while audio.playing:
         pass
     print('done')
 
 while True:
     play()
-    deep_sleep_alarm = alarm.time.TimeAlarm(monotonic_time=time.monotonic() + 10)
+
+    pin_alarm = alarm.pin.PinAlarm(pin=board.GP18, value=True, pull=True)
+    deep_sleep_alarm = alarm.time.TimeAlarm(monotonic_time=time.monotonic() + deep_sleep_after_seconds)
+    
     alarm.light_sleep_until_alarms(pin_alarm, deep_sleep_alarm)
     if isinstance(alarm.wake_alarm, alarm.time.TimeAlarm):
         print('going into deep sleep, night night')
         alarm.exit_and_deep_sleep_until_alarms(pin_alarm)
     else:
         print('woke from light sleep due to button press')
-        
 
 
